@@ -107,6 +107,14 @@
       .status-error {
         color: #ff5722;
       }
+
+      /* 캡처용 숨겨진 캔버스 */
+      #captureCanvas {
+        position: absolute;
+        top: -10000px;
+        left: -10000px;
+        pointer-events: none;
+      }
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -115,6 +123,7 @@
 
   <body>
     <video id="video" autoplay muted playsinline></video>
+    <canvas id="captureCanvas"></canvas>
 
     <div id="info">
       WebAR 상태: <span id="status">초기화 중...</span><br />
@@ -302,7 +311,7 @@
         try {
           const loader = new THREE.GLTFLoader();
           const gltf = await loader.loadAsync(
-            'honey3d.glb' // GLB 파일 경로
+            'lib/three.js-master/files/honey3d.glb' // GLB 파일 경로
           );
           model = gltf.scene;
           model.position.set(0, 0, 0);
@@ -424,16 +433,72 @@
         }
       }
 
-      // 화면 캡처 기능
+      // 화면 캡처 기능 (카메라 + 3D 객체 합성)
       function captureScreen() {
         try {
           updateStatus('화면 캡처 중...');
 
-          // 캔버스에서 이미지 데이터 추출
-          const canvas = renderer.domElement;
+          const captureCanvas = document.getElementById('captureCanvas');
+          const captureCtx = captureCanvas.getContext('2d');
 
-          // 캔버스를 이미지로 변환
-          canvas.toBlob(
+          // 캔버스 크기를 현재 화면 크기로 설정
+          captureCanvas.width = window.innerWidth;
+          captureCanvas.height = window.innerHeight;
+
+          // 비디오가 있는 경우 먼저 그리기
+          if (video && video.videoWidth > 0 && video.videoHeight > 0) {
+            // 비디오를 캔버스 크기에 맞게 그리기 (cover 방식으로)
+            const videoAspect = video.videoWidth / video.videoHeight;
+            const canvasAspect = captureCanvas.width / captureCanvas.height;
+
+            let drawWidth, drawHeight, drawX, drawY;
+
+            if (videoAspect > canvasAspect) {
+              // 비디오가 더 넓음 - 높이를 맞추고 가로를 자름
+              drawHeight = captureCanvas.height;
+              drawWidth = drawHeight * videoAspect;
+              drawX = (captureCanvas.width - drawWidth) / 2;
+              drawY = 0;
+            } else {
+              // 비디오가 더 높음 - 너비를 맞추고 세로를 자름
+              drawWidth = captureCanvas.width;
+              drawHeight = drawWidth / videoAspect;
+              drawX = 0;
+              drawY = (captureCanvas.height - drawHeight) / 2;
+            }
+
+            captureCtx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+          } else {
+            // 비디오가 없는 경우 그라데이션 배경 그리기
+            const gradient = captureCtx.createLinearGradient(
+              0,
+              0,
+              captureCanvas.width,
+              captureCanvas.height
+            );
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            captureCtx.fillStyle = gradient;
+            captureCtx.fillRect(
+              0,
+              0,
+              captureCanvas.width,
+              captureCanvas.height
+            );
+          }
+
+          // WebGL 캔버스 (3D 객체)를 위에 합성
+          const webglCanvas = renderer.domElement;
+          captureCtx.drawImage(
+            webglCanvas,
+            0,
+            0,
+            captureCanvas.width,
+            captureCanvas.height
+          );
+
+          // 캡처된 이미지를 Blob으로 변환
+          captureCanvas.toBlob(
             function (blob) {
               if (blob) {
                 // 파일명 생성 (타임스탬프 포함)
