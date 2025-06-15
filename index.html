@@ -171,7 +171,9 @@
         updateStatus('모델 로드 중...');
         const loader = new THREE.GLTFLoader();
         try {
-          const gltf = await loader.loadAsync('./honey3d.glb');
+          const gltf = await loader.loadAsync(
+            'honey3d.glb' // GLB 파일 경로
+          );
           model = gltf.scene;
           model.position.set(0, 0, 0);
           model.scale.set(1, 1, 1); // 필요에 따라 크기 조정
