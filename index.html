@@ -118,7 +118,8 @@
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- 수정된 GLTFLoader 경로 -->
+    <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
   </head>
 
   <body>
@@ -215,7 +216,7 @@
         // 웹캠 초기화
         await initCamera();
 
-        // GLB 모델 로드 (데모용 큐브로 대체)
+        // GLB 모델 로드
         await loadModel();
 
         // 조명 설정
@@ -311,7 +312,7 @@
         try {
           const loader = new THREE.GLTFLoader();
           const gltf = await loader.loadAsync(
-            'lib/three.js-master/files/honey3d.glb' // GLB 파일 경로
+            './honey3d.glb' // GLB 파일 경로
           );
           model = gltf.scene;
           model.position.set(0, 0, 0);
